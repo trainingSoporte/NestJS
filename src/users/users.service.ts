@@ -79,7 +79,11 @@ export class UsersService {
 
     }
 
-    delete() {
+    delete(id: number) {
+
+        users =  users.filter((user:User) => user.id !== id);
+
+        return users;
 
     }
 }

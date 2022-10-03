@@ -12,9 +12,11 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './../dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Users')
 @Controller('users')
-@UsePipes(ValidationPipe)
+// @UsePipes(ValidationPipe)
 export class UsersController {
     constructor(private readonly userService: UsersService) { }
 
@@ -29,6 +31,9 @@ export class UsersController {
     }
 
     @Post()
+    @ApiOperation({summary:'Crear User'})
+    @ApiResponse({status:201, description:'Usuario Creado OK'})
+    @ApiResponse({status:400, description:'Datos Incorrectos'})
     create(@Body() createUserDto: CreateUserDto) {
         return this.userService.create(createUserDto);
     }
@@ -38,8 +43,8 @@ export class UsersController {
         return this.userService.update(id, updateUserDto);
     }
 
-    @Delete()
-    delete() {
-        return 'delete';
+    @Delete(':id')
+    delete(@Param('id', ParseIntPipe) id: number) {
+        return this.userService.delete(id);
     }
 }
