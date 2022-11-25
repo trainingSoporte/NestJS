@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '../interfaces/user.interface';
-import { CreateUserDto, UpdateUserDto } from '../dto/';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateUserDto, UpdateUserDto } from './dto/';
+import { User } from './entities/user.entity';
 
 
 
@@ -38,45 +40,48 @@ let users: User[] = [
 @Injectable()
 export class UsersService {
 
+    constructor(
+        @InjectRepository(User)
+        private userRepository:Repository<User>
+    ){}
+
     findAll() {
-        return users;
+        return this.userRepository.find();
     }
 
     findById(id: number) {
 
-        const user = users.find(user => user.id === id);
-
-        if (!user) throw new NotFoundException(`El user id: ${id} no existe..`);
-
-        return user;
+        return this.userRepository.findOneBy({id});
     }
 
-    create(createUserDto: CreateUserDto) {
-        const _user: User = {
-            id: 4,
-            ...createUserDto
-        }
+    async create(createUserDto: CreateUserDto) {
+     
+        try {
 
-        users.push(_user);
-
-        return _user;
-    }
-
-    update(id: number, updateUserDto: UpdateUserDto) {
-
-        let _user: User = this.findById(id);
-
-        users = users.map(user => {
-            if (user.id === id) {
-                _user = { ..._user, ...updateUserDto, id };
-                return _user;
-            }
+            const user = this.userRepository.create(createUserDto);
+            await this.userRepository.save(user);
 
             return user;
-        })
+            
+        } catch (error) {
+            console.log(error);
+            throw new InternalServerErrorException(error);    
+        }
+    }
 
-        return _user;
+    async update(id: number, updateUserDto: UpdateUserDto) {
 
+        const user = await this.userRepository.preload({
+            id:id,
+            ...updateUserDto
+        });
+
+        if(user)throw new NotFoundException(`El User con Id: ${id} no existe`);
+
+        await this.userRepository.save(user);
+
+        return user;
+        
     }
 
     delete(id: number) {
